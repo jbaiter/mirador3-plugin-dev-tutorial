@@ -139,9 +139,43 @@ selector modules are structured like this:
   the sub-store, e.g. the `companionWindows` sub-store has a [`companionWindows.js`][src-companion]
   selector module that has selector functions to access its values
 
+[redux-devtools]: https://github.com/reduxjs/redux-devtools
 [src-selectors]: https://github.com/ProjectMirador/mirador/blob/master/src/state/selectors
 [src-getters]: https://github.com/ProjectMirador/mirador/blob/master/src/state/selectors/getters.js
 [src-companion]: https://github.com/ProjectMirador/mirador/blob/master/src/state/selectors/companionWindows.js
+
+
+## Mutating Mirador 3 state with Redux Actions
+
+If you want to trigger some change in the application, you have to change the corresponding value
+in the Redux store. As usual, this cannot be done directly, but only through **actions** that are
+triggered by **action creator functions**. Much like selectors, Mirador ships with creator functions
+for every possible action, and we can use them in our plugins.
+
+To use action creator functions from Mirador 3, map them to your plugin component's props with the
+`mapDispatchToProps` field in the plugin definition. As an example, here's a custom pagination plugin
+that uses the [`setNextCanvas` and `setPreviousCanvas` action creator functions][canvas-fns] to page
+through a manifest's canvases (maybe the plugin adds a slideshow mode?)
+
+```js
+import { setNextCanvas, setPreviousCanvas } from 'mirador/dist/es/src/state/actions';
+
+const myPlugin = {
+  component: MyPluginComponent,
+  target: 'OpenSeadragonViewer',
+  mode: 'add',
+  // The function receives the dispatch function and the target component's props
+  mapDispatchToProps: (dispatch, { windowId }) => ({
+    // The props are functions that create the action with the action creator function and
+    // dispatch it to the Redux middleware, i.e. you can ju st call props.setNextCanvas()
+    // in the component
+    setNextCanvas: () => dispatch(setNextCanvas(windowId)),
+    setPreviousCanvas: () => dispatch(setPreviousCanvas(windowId)),
+  })
+}
+```
+
+[canvas-fns]: https://github.com/ProjectMirador/mirador/blob/5ca33205bf9bac636ba5ef0faf820f58c0d9751d/src/state/actions/canvas.js#L35-L54
 
 
 ## Reacting to Mirador 3 Redux Actions with a custom plugin Saga
