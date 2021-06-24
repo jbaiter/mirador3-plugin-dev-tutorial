@@ -282,18 +282,18 @@ The basic approach is the same as for the `add` case:
      );
    }
    ```
-   3. For registering the plugin, we only need to swap out the components and the mode:
-      ```js
-      import Mirador from 'mirador/dist/es/src/init'
-      import MyBranding from './MyBranding'
+3. For registering the plugin, we only need to swap out the components and the mode:
+   ```js
+   import Mirador from 'mirador/dist/es/src/init'
+   import MyBranding from './MyBranding'
 
-      const myPlugin = {
-          component: MyBranding,
-          target: 'Branding',
-          mode: 'wrap'
-      };
-      const mirador = Mirador.viewer({ /* cfg goes here */ }, [myPlugin]);
-      ```
+   const myPlugin = {
+       component: MyBranding,
+       target: 'Branding',
+       mode: 'wrap'
+   };
+   const mirador = Mirador.viewer({ /* cfg goes here */ }, [myPlugin]);
+   ```
 
 
 **If you want to render the wrapped component as part of your plugin component's tree**,
