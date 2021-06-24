@@ -1,0 +1,20 @@
+{
+  "name": "mirador3-plugin-example2",
+  "version": "1.0.0",
+  "description": "",
+  "dependencies": {
+    "mirador": "^3.2.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  },
+  "devDependencies": {
+    "parcel": "next"
+  },
+  "scripts": {
+    "start": "parcel serve ./index.html",
+    "build": "parcel build ./index.html",
+    "postinstall": "sed -i 's/fetch(/fetch.bind(window)(/g' ./node_modules/mirador/dist/es/src/state/sagas/iiif.js"
+  },
+  "author": "Johannes Baiter <johannes.baiter@gmail.com>",
+  "license": "ISC"
+}

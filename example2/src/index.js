@@ -1,10 +1,10 @@
 import Mirador from 'mirador/dist/es/src/init'
-import MyPlugin from './MyPlugin'
+import MyBranding from './MyBranding'
 
 const myPlugin = {
-    component: MyPlugin,
-    target: 'WindowTopBarPluginArea',
-    mode: 'add'
+    component: MyBranding,
+    target: 'Branding',
+    mode: 'wrap'
 };
 
 const miradorCfg = {

@@ -12,7 +12,9 @@ that are essential for Mirador 3 plugin development:
   the section on [Higher Order Components][react-hoc]
 - **Redux and React-Redux**: The state in Mirador 3 is completely handled by the Redux library. Plugins
   that want to access or mutate the app state, or need their own global state, must make use of it.
-  Essential resources are the [Redux Essentials][redux-essentials] and the [Redux Fundamentals][redux-fundamentals]
+  Essential resources are the [Redux Essentials][redux-essentials] and the [Redux Fundamentals][redux-fundamentals].
+  It's also a good idea to read through the [Selector Intro][redux-reselect] for an introduction to
+  selector functions, which are heavily used in M3.
 - **Redux-Saga**: Side-effects in Mirador 3 are handled with this library. It's also a highly useful tool
   for *reacting to Redux actions*, which can come in extremely handy when developing plugins (e.g. if you want
   your plugin to react to a page change). Essential resources are the [Redux-Saga Introduction][saga-intro]
@@ -25,6 +27,7 @@ introductions beforehand.
 [react-hoc]: https://reactjs.org/docs/higher-order-components.html
 [redux-essentials]: https://redux.js.org/tutorials/essentials/part-1-overview-concepts
 [redux-fundamentals]: https://redux.js.org/tutorials/fundamentals/part-1-overview
+[redux-reselect]: https://redux.js.org/recipes/computing-derived-data
 [saga-intro]: https://redux-saga.js.org/docs/introduction/GettingStarted
 [saga-basic-concepts]: https://redux-saga.js.org/docs/basics/DeclarativeEffects
 
@@ -84,6 +87,62 @@ components that are wrapped with this HOC can be `wrap`ped by a plugin component
 
 [gh-pluginhook-search]: https://github.com/search?q=PluginHook+repo%3AProjectMirador%2Fmirador+extension%3Ajs+path%3Asrc%2Fcomponents&type=Code&ref=advsearch&l=&l=
 [gh-withplugins-search]: https://github.com/search?q=withPlugins+repo%3AProjectMirador%2Fmirador+extension%3Ajs+path%3Asrc%2Fcontainers&type=Code&ref=advsearch&l=&l=
+
+## Accessing the Mirador 3 app state with Redux Selectors
+If you want to get access to the current application state, e.g. to tell what the currently displayed
+manifest is, you will have to access Mirador 3's global application state, which is implemented as a
+Redux store. You cannot access it directly, but will instead have to supply a `mapStateToProps` object
+in your plugin definition that maps your plugin component's props to a **selector function** that pulls
+a value from the Redux store and passes it as a prop.
+
+The tl;dr of a selector function is that it's a function that thakes the **Redux State** or one or more
+other selectors and extracts and returns some data from that. Think of them like a stored procedure in
+a DBMS, targetting your Redux state.
+
+Mirador 3 ships with a ton of selector functions that should satisfy most of your needs as a plugin author,
+you can find them in the [`src/state/selectors`][src-selectors] directory. Unfortunately they're barely
+documented at the moment, but grepping for them in the code base and unit tests should give you a good idea
+of how to use them. Maybe you can even take the time to make a documentation PR when you've understood a
+selector? :-)
+
+To illustrate, here's a small plugin definition that receives the identifier of the manifest that is currently
+rendered in its associated window. It targets the `OpenSeadragonViewer` component, which receives a prop
+`windowId` that has the identifier of the window that renders the current instance of the component.
+With this, we can use the `getWindow` selector to get the state of the current window, which has a property
+`manifestId` with the manifest that is displayed.
+
+```js
+import getWindow from 'mirador/dist/es/src/state/selectors';
+
+const myPlugin = {
+  component: MyPluginComponent,
+  target: 'OpenSeadragonViewer',
+  mode: 'add',
+  // The function receives the Redux state and the target component's props
+  mapStateToProps: (state, { windowId }) => ({
+    // The plugin component will receive a `manifestId` prop with the identifier
+    // of the window's current manifest
+    manifestId: getWindow(state, { windowId }).manifestId,
+  })
+}
+```
+
+The hard part of the above is finding out which part of the Redux state you actually need and which of the
+pre-existing selectors you can use to get that. For the former, it's a good idea to have the
+[Redux DevTools][redux-devtools] installed, they allow you to browse through the Redux state and check
+where the information you need is located. From there, you can browse through the
+[available selectors][src-selectors] and check if there is one that extracts it already. Generally the
+selector modules are structured like this:
+
+- Selectors for a few common top level sub-stores are located in the [`getters`][src-getters] module
+- Selectors for specific sub-stores and their children are usually in a module that's named after
+  the sub-store, e.g. the `companionWindows` sub-store has a [`companionWindows.js`][src-companion]
+  selector module that has selector functions to access its values
+
+[src-selectors]: https://github.com/ProjectMirador/mirador/blob/master/src/state/selectors
+[src-getters]: https://github.com/ProjectMirador/mirador/blob/master/src/state/selectors/getters.js
+[src-companion]: https://github.com/ProjectMirador/mirador/blob/master/src/state/selectors/companionWindows.js
+
 
 ## Reacting to Mirador 3 Redux Actions with a custom plugin Saga
 
@@ -150,9 +209,64 @@ const myPlugin = {
 const mirador = Mirador.viewer({ /* cfg goes here */ }, [myPlugin]);
 ```
 
-## Example II: Stateless `wrap` plugin
+## Example II: Stateless `wrap` plugin that replaces a default component
+For this example, we'll replace Mirador's default branding with our own, a small flower icon:
 
-TODO
+![end result of wrap plugin](e2-rendered.png)
+
+The basic approach is the same as for the `add` case:
+
+1. Digging around in the component tree shows that we need to replace the `Branding` component
+2. For our custom branding, we use the original component as a blueprint and simply replace the icon:
+   ```jsx
+   // MyBranding.jsx
+   import React from 'react';
+   import IconButton from '@material-ui/core/IconButton';
+   import Typography from '@material-ui/core/Typography';
+   import LocalFloristIcon from '@material-ui/icons/LocalFlorist';
+
+   // The wrapping plugin components gets the same props as the component to be wrapped
+   export default function MyBranding({ variant, ...ContainerProps }) {
+     return (
+       <div {...ContainerProps}>
+         { variant === 'wide' && (
+         <div>
+           <Typography align="center" component="p" variant="h3">{t('mirador')}</Typography>
+         </div>
+         )}
+         <Typography align="center">
+           <IconButton
+             component="a"
+             href="https://example.com"
+             target="_blank"
+             rel="noopener"
+           >
+               <LocalFloristIcon />
+           </IconButton>
+         </Typography>
+       </div>
+     );
+   }
+   ```
+   3. For registering the plugin, we only need to swap out the components and the mode:
+      ```js
+      import Mirador from 'mirador/dist/es/src/init'
+      import MyBranding from './MyBranding'
+
+      const myPlugin = {
+          component: MyBranding,
+          target: 'Branding',
+          mode: 'wrap'
+      };
+      const mirador = Mirador.viewer({ /* cfg goes here */ }, [myPlugin]);
+      ```
+
+
+**If you want to render the wrapped component as part of your plugin component's tree**,
+you can access it via the `TargetComponent` prop, i.e. use `<props.TargetComponent ...props>`
+to render it in JSX. This can be useful if you want to e.g. add the option to toggle the
+visibility of a given component or you want to customize the look of a component in a way
+that requires changes to the markup.
 
 ## Example III: Plugin that interacts with the app state
 
