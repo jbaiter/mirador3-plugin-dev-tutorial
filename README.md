@@ -31,6 +31,23 @@ introductions beforehand.
 [saga-intro]: https://redux-saga.js.org/docs/introduction/GettingStarted
 [saga-basic-concepts]: https://redux-saga.js.org/docs/basics/DeclarativeEffects
 
+## Mirador 3 Architecture: Containers and Components
+Many components in Mirador 3 are split into two separate parts: a **Container** and a **Component**.
+
+The **Component** is simply a React component that takes props and renders something, it does not
+know about things like Redux, the plugin system or the internationalization system. It is solely
+concerned with displaying the UI to the user, based on data received via props, and receiving user
+input and forwarding it up the component tree via callbacks that were provided in the props.
+
+The **Container** then takes care of hooking up the component to the aforementioned systems.
+It's implemented as a *Higher Order Component* that wraps the component and supplies the connections
+to these systems via props, i.e. it receives data from the Redux store and provides it as props to
+the Component, and it wraps Redux action creators in functions that are also passed as props.
+
+This is a well-established pattern in React apps, you can read more about it in this article:
+[Container Components][container-components].
+
+[container-components]: https://medium.com/@learnreact/container-components-c0e67432e005
 
 ## What's in a Mirador 3 plugin
 
@@ -224,6 +241,9 @@ version to catch breakages early. Debugging Sagas is kind of painful due to the 
 carefully and not overload the plugin sagas too much.
 
 
+## Styling plugin components
+
+TODO
 
 ## Internationalization with react-i18next
 
@@ -295,7 +315,6 @@ For this example, we'll replace Mirador's default branding with our own, a small
 ![end result of wrap plugin](e2-rendered.png)
 
 The basic approach is the same as for the `add` case:
-The basic approach is the same as for the `add` case:
 
 1. Digging around in the component tree shows that we need to replace the `Branding` component
 2. For our custom branding, we use the original component as a blueprint and simply replace the icon:
@@ -342,12 +361,12 @@ The basic approach is the same as for the `add` case:
    const mirador = Mirador.viewer({ /* cfg goes here */ }, [myPlugin]);
    ```
 
-
 **If you want to render the wrapped component as part of your plugin component's tree**,
 you can access it via the `TargetComponent` prop, i.e. use `<props.TargetComponent ...props>`
 to render it in JSX. This can be useful if you want to e.g. add the option to toggle the
 visibility of a given component or you want to customize the look of a component in a way
 that requires changes to the markup.
+
 
 ## Example III: Plugin that interacts with the app state
 
