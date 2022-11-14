@@ -10,7 +10,7 @@ that are essential for Mirador 3 plugin development:
 - **React**: This should be obvious, Mirador 3 is a React app and plugin development is based on adding
   custom React components to the app. Essential resources are the [React Tutorial][react-tutorial] and
   the section on [Higher Order Components][react-hoc]
-- **Redux and React-Redux**: The state in Mirador 3 is completely handled by the Redux library. Plugins
+- **Redux and React-Redux**: The global state in Mirador 3 is completely handled by the Redux library. Plugins
   that want to access or mutate the app state, or need their own global state, must make use of it.
   Essential resources are the [Redux Essentials][redux-essentials] and the [Redux Fundamentals][redux-fundamentals].
   It's also a good idea to read through the [Selector Intro][redux-reselect] for an introduction to
@@ -20,7 +20,7 @@ that are essential for Mirador 3 plugin development:
   your plugin to react to a page change). Essential resources are the [Redux-Saga Introduction][saga-intro]
   and [Redux-Saga Basic Concepts][saga-basic-concepts].
 
-You can learn all three of those technologies "as you go", but I recommend to work at least through the basic
+You can learn all of those technologies "as you go", but I recommend to work at least through the basic
 introductions beforehand.
 
 [react-tutorial]: https://reactjs.org/tutorial/tutorial.html
@@ -42,7 +42,11 @@ Such a plugin component can attach itself to a plugin-aware Mirador 3 component 
          widgets, e.g. a button in the window title bar or a new entry in the ribbon menu.
 - `wrap`: The plugin components **wraps** the target component and (optionally!) renders the target
           component as a child of its own virtual DOM tree. This allows the complete substitution of
-          every plugin-aware React Component inside of Mirador 3.
+          every plugin-aware React Component inside of Mirador 3. The wrapped component can be accessed
+          via the `TargetComponent` prop that gets passed to the wrapping plugin component, this can
+          be used to render it in the plugin's JSX via. `<props.TargetComponent ...props>`. This is useful
+          if you want to e.g. add the option to toggle the visibility of a given component or you want to
+          wrap the existing component with custom markup.
 
 To define a plugin, create a JavaScript object with the following keys:
 
@@ -95,9 +99,9 @@ Redux store. You cannot access it directly, but will instead have to supply a `m
 in your plugin definition that maps your plugin component's props to a **selector function** that pulls
 a value from the Redux store and passes it as a prop.
 
-The tl;dr of a selector function is that it's a function that thakes the **Redux State** or one or more
-other selectors and extracts and returns some data from that. Think of them like a stored procedure in
-a DBMS, targetting your Redux state.
+The tl;dr of a selector function is that it's a function that thakes the **Redux State** and optionally
+some  other selectors (dependencies) and extracts and returns some data from that. Think of them like a
+stored procedure in a DBMS, targetting your Redux state.
 
 Mirador 3 ships with a ton of selector functions that should satisfy most of your needs as a plugin author,
 you can find them in the [`src/state/selectors`][src-selectors] directory. Unfortunately they're barely
@@ -106,13 +110,14 @@ of how to use them. Maybe you can even take the time to make a documentation PR 
 selector? :-)
 
 To illustrate, here's a small plugin definition that receives the identifier of the manifest that is currently
-rendered in its associated window. It targets the `OpenSeadragonViewer` component, which receives a prop
+rendered in its associated compnion window. It targets the `OpenSeadragonViewer` component, which receives a prop
 `windowId` that has the identifier of the window that renders the current instance of the component.
 With this, we can use the `getWindow` selector to get the state of the current window, which has a property
 `manifestId` with the manifest that is displayed.
 
 ```js
-import getWindow from 'mirador/dist/es/src/state/selectors';
+//
+import { getWindow } from 'mirador/selectors';
 
 const myPlugin = {
   component: MyPluginComponent,
@@ -158,7 +163,7 @@ that uses the [`setNextCanvas` and `setPreviousCanvas` action creator functions]
 through a manifest's canvases (maybe the plugin adds a slideshow mode?)
 
 ```js
-import { setNextCanvas, setPreviousCanvas } from 'mirador/dist/es/src/state/actions';
+import { setNextCanvas, setPreviousCanvas } from 'mirador/actions';
 
 const myPlugin = {
   component: MyPluginComponent,
@@ -249,6 +254,7 @@ For this example, we'll replace Mirador's default branding with our own, a small
 ![end result of wrap plugin](e2-rendered.png)
 
 The basic approach is the same as for the `add` case:
+The basic approach is the same as for the `add` case:
 
 1. Digging around in the component tree shows that we need to replace the `Branding` component
 2. For our custom branding, we use the original component as a blueprint and simply replace the icon:
@@ -284,7 +290,7 @@ The basic approach is the same as for the `add` case:
    ```
 3. For registering the plugin, we only need to swap out the components and the mode:
    ```js
-   import Mirador from 'mirador/dist/es/src/init'
+   import Mirador from 'mirador'
    import MyBranding from './MyBranding'
 
    const myPlugin = {
