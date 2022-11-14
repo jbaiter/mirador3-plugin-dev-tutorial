@@ -185,8 +185,49 @@ const myPlugin = {
 
 ## Reacting to Mirador 3 Redux Actions with a custom plugin Saga
 
-TODO
+Adding custom elements to the viewer, reading and changing the current state already offers a lot of options for implementing custom
+behaviors in Mirador 3. But the real power of the plugin system comes from the ability to react to Redux actions dispatched inside of
+Mirador with a custom Redux-Saga state machine. If you haven't yet read through the Redux-Saga documentation, I recommend doing so
+before tackling this section.
 
+The entry point for defining a custom saga for a plugin is the `saga` key in your plugin definition. The value of this key is a
+saga *generator function* that returns *side effects* that map Redux actions to other functions (generator or just regular ones).
+These are called whenever the associated action is dispatched.
+
+As a simple example, this plugin prints the current canvas identifier whenever the canvas in a window changes:
+
+```javascript
+import { takeEvery } from 'redux-saga/effects';
+
+/** This will be called every time the SET_CANVAS action is dispatched */
+const onCanvasChange = function* (action) {
+  console.log(action.payload.canvasId);
+}
+
+const pluginSaga = function* () {
+  /* `takeEvery` calls the associated function every time the action is dispatched */
+  yield takeEvery('SET_CANVAS', onCanvasChange);
+}
+
+const myPlugin = {
+  component: () => null,
+  saga: pluginSaga,
+}
+```
+
+Note that in `onCanvasChange` you could just as well wait for other actions (`take`, `takeEvery`, `takeLeading`, etc), query the application state (`select`) or dispatch actions of your own (`put`). This allows you to build complex state machines that react to events within the Mirador and
+interact with its state.
+
+However, great power comes with great responsibility: It's really easy to shoot yourself in the foot here, e.g. by accidentally creating an infinite
+loop. It's also coupled incredibly tightly to internal details of the Mirador implementation, so thoroughly test your plugin with every new Mirador
+version to catch breakages early. Debugging Sagas is kind of painful due to the asynchronous nature of the state machines, so it's best to tread
+carefully and not overload the plugin sagas too much.
+
+
+
+## Internationalization with react-i18next
+
+TODO
 
 ## Example I: Stateless `add` plugin
 
