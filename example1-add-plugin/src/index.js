@@ -1,4 +1,4 @@
-import Mirador from 'mirador/dist/es/src/init'
+import Mirador from 'mirador'
 import MyPlugin from './MyPlugin'
 
 const myPlugin = {
